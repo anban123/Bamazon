@@ -15,36 +15,36 @@ connection.connect(function(err) {
     console.table(results);
 });
 
-var itemList = [];
-
 // Function to ask user what they'd like to buy and how much
 function start() {
+    // Query the database for all items being sold
+    connection.query("SELECT * FROM auctions", function(err, results) {
+        if (err) throw err;
+    // Ask the user what they'd like to buy and how many
     inquirer.prompt([
     {
         name: "whichItem",
-        type: "list",
+        type: "rawlist",
         message: "Which item would you like to buy?",
-        choices: itemList
+        choices: showItems()
     },
     {
         name: "howMany",
         type: "input",
-        message: "How many would you like to buy?"
+        message: "How many would you like to buy?",
         validate: function(value) {
             if (value === integer) {
                 return true;
             } else {
                 return false;
             };
-        };
-    })
+        }
+    }])
     .then(function(answer) {
         console.log(answer.whichItem);
     }); 
-}
-    //Inquirer prompt:
-    //The first should ask them the ID of the product they would like to buy.
-    //The second message should ask how many units of the product they would like to buy.
+})
+};
 
 // Function to show items
 function showItems() {
