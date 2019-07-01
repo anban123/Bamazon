@@ -14,36 +14,71 @@ connection.connect(function(err, results) {
 
 });
 
+var itemArray = [];              //needed???????????
 var action = process.argv[3];
 Switch();
 
-// Function to view products for sale
+// Function to view products for sale  (read)
 function viewProducts() {
-
+    console.log("Viewing all items.\n");
+    connection.query("SELECT * FROM items", function(err, res) {
+        if (err) throw err;
+        console.log(res);
+        connection.end();
+    })
 };
 
 // Function to view low inventory
 function lowInventory() {
-
+    console.log("Viewing items with low inventory, with 5 or less units.\n");
+    connection.query("SELECT * FROM items WHERE stock_quantity <= 5", function(err, res) {
+        if (err) throw err;
+        console.log(res);
+        connection.end();
+    })
 };
 
 // Function to add to inventory
 function addInventory() {
     console.log("Adding more inventory.\n");
+
+    var itemArray = [];
+
+    inquirer.prompt([
+        {
+            name: "productName",
+            type: "list",
+            message: "Which item will you be adding inventory to?",
+            choices: itemArray
+        },
+        {
+            name: "stockQuantity",
+            type: "input",
+            message: "How many units of inventory would you like to add?",
+            validate: function(quantity) {
+                if (quantity === NaN || quantity === decimal) {  //% quantity = 0?????????????
+                    return false;
+                    console.log("Please enter a valid number");
+                } else {
+                    return false;
+                }
+            }
+        }
+    ]);
     var query = connection.query(
         "UPDATE items SET ? WHERE ?",
         [
             {
-                stock_quantity: answer,  
+                stock_quantity: answer.stockQuantity,  
             },
             {
-                product_name: answer,
+                product_name: answer.productName,
             }
         ],
         function(err, res) {
             if (err) throw err;
             console.log(res.affectedRows + " inventory added for " + answer);
-            //deleteItem();            //needed????????????
+            deleteItem();            //needed????????????
         }
     )
 };
@@ -82,16 +117,9 @@ function newProduct() {
             type: "input",
             message: "How many units are there of this product?",
             validate: function(quantity) {
-                if (quantity === integer) {  //which one is correct? And do I need 2 validations?
-                    return true;
-                } else {
+                if (quantity === NaN || quantity === decimal) {  //which one is correct? And do I need 2 validations?
                     return false;
-                    console.log("Please input a valid number.")
-                };
-            },
-            validate: function(quantity) {
-                if (quantity === NaN) {      //???
-                    return false;
+                    console.log("Please input a valid number.");
                 } else {
                     return true;
                 };
@@ -109,6 +137,33 @@ function newProduct() {
     )
 };
 
+// Function to delete an item
+function deleteItem() {
+    console.log("Deleting item.\n");
+
+    var itemArray = [];
+
+    inquirer.prompt([
+        {
+            name: "productName",
+            type: "list",
+            message: "Which item would you like to delete?",
+            choices: itemArray
+        }
+    ]);
+    connection.query(
+        "DELETE FROM items WHERE ?",
+        {
+            product_name: answer.productName
+        },
+        function(err, res) {
+            if (err) throw err;
+            console.log(res.affectedRows + " item deleted!\n");
+            viewProducts();     
+        }
+    )
+};
+
 function Switch(action) {
     switch (action) {
         case "view products for sale":
@@ -122,4 +177,4 @@ function Switch(action) {
         default:
             return console.log("You're doing it wrong!!!")
     }
-}
+};
