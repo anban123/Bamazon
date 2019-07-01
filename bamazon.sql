@@ -5,17 +5,17 @@ CREATE DATABASE bamazondb;
 USE bamazondb;
 
 CREATE TABLE items (
-    item_id INT NOT NULL AUTO_INCREMENT,
+    item_id INTEGER NOT NULL AUTO_INCREMENT,
     product_name VARCHAR(50) NOT NULL,
     department_name VARCHAR(50) NOT NULL,
-    price INTEGER(10,2) NOT NULL,
-    stock_quantity INTEGER() NULL,
-    PRIMARY KEY (id)
+    price DECIMAL(10, 2) NOT NULL,
+	stock_quantity INTEGER NOT NULL,
+    PRIMARY KEY (item_id)
 );
 
 INSERT INTO items (product_name, department_name, price, stock_quantity)
 VALUES ("Vanilla Soap", "Personal Care", 7.99, 24),
-("Act", "Personal Care", 8.79, 45),
+("Act Mouthwash", "Personal Care", 8.79, 45),
 ("Blender", "Kitchen", 129.59, 14),
 ("Black Pens", "Office", 2.00, 59),
 ("Water Bottle", "Sports", 34.98, 23),
