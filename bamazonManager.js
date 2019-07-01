@@ -1,4 +1,5 @@
 var mysql = require("mysql");
+var inquirer = require("inquirer");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -14,7 +15,7 @@ connection.connect(function(err, results) {
 
 });
 
-var itemArray = [];              //needed???????????
+var itemArray = [];              
 var action = process.argv[3];
 Switch();
 
@@ -23,6 +24,11 @@ function viewProducts() {
     console.log("Viewing all items.\n");
     connection.query("SELECT * FROM items", function(err, res) {
         if (err) throw err;
+
+        for (var i = 0; i < itemArray.length; i++) {
+            something.push.res[i].product_name               //change something ------------------------
+        }
+
         console.log(res);
         connection.end();
     })
@@ -42,7 +48,12 @@ function lowInventory() {
 function addInventory() {
     console.log("Adding more inventory.\n");
 
-    var itemArray = [];
+    connection.query("SELECT * FROM items", function(err, res) {
+        if (err) throw err;
+
+        for (var i = 0; i < itemArray.length; i++) {
+            something.push.res[i].product_name          //change something ------------------
+        }
 
     inquirer.prompt([
         {
@@ -125,7 +136,7 @@ function newProduct() {
                 };
             }
         }
-    ]);
+    ]);                                                            //need .then!!!!!!!!!
     var query = connection.query(
         "INSERT INTO items SET ?",
         {
