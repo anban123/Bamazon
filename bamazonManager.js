@@ -9,15 +9,29 @@ var connection = mysql.createConnection({
     database: "bamazondb"
 });
 
-connection.connect(function(err, results) {
+connection.connect(function(err) {
     if (err) throw err;
     console.log("Connected as Id " + connection.threadId);
-
 });
 
 var itemArray = [];              
-var action = process.argv[3];
-Switch();
+var action = process.argv.slice(2).join(" ");
+console.log("action: ", action);
+
+// Switch function to run chosen functions
+switch (action) {
+    case "view products for sale":
+        return viewProducts(action);
+    case "view low inventory":
+        return lowInventory(action);
+    case "add to inventory":
+        return addInventory(action);
+    case "add new product":
+        return newProduct(action);
+    default:
+        return console.log("You're doing it wrong!!!")
+};  
+
 
 // Function to view products for sale  (read)
 function viewProducts() {
@@ -28,11 +42,10 @@ function viewProducts() {
         for (var i = 0; i < itemArray.length; i++) {
             something.push.res[i].product_name               //change something ------------------------
         }
-
         console.log(res);
         connection.end();
-    })
-};
+})};
+
 
 // Function to view low inventory
 function lowInventory() {
@@ -41,20 +54,17 @@ function lowInventory() {
         if (err) throw err;
         console.log(res);
         connection.end();
-    })
-};
+})};
+
 
 // Function to add to inventory
 function addInventory() {
     console.log("Adding more inventory.\n");
-
     connection.query("SELECT * FROM items", function(err, res) {
         if (err) throw err;
-
         for (var i = 0; i < itemArray.length; i++) {
             something.push.res[i].product_name          //change something ------------------
         }
-
     inquirer.prompt([
         {
             name: "productName",
@@ -72,10 +82,7 @@ function addInventory() {
                     console.log("Please enter a valid number");
                 } else {
                     return false;
-                }
-            }
-        }
-    ]) .then()
+    }}}]) .then(function(answer) {
     var query = connection.query(
         "UPDATE items SET ? WHERE ?",
         [
@@ -90,14 +97,12 @@ function addInventory() {
             if (err) throw err;
             console.log(res.affectedRows + " inventory added for " + answer);
             deleteItem();            //needed????????????
-        }
-    )
-};
+})})})};
+
 
 // Function to add a new product
 function newProduct() {
     console.log("Creating a new product.\n");
-
     inquirer.prompt([
         {
             name: "productName",
@@ -144,16 +149,13 @@ function newProduct() {
             department_name: answer.departmentName,
             price: answer.itemPrice,
             stock_quantity: answer.stockQuality
-        }
-    )
-};
+})};
+
 
 // Function to delete an item
 function deleteItem() {
     console.log("Deleting item.\n");
-
     var itemArray = [];
-
     inquirer.prompt([
         {
             name: "productName",
@@ -171,21 +173,4 @@ function deleteItem() {
             if (err) throw err;
             console.log(res.affectedRows + " item deleted!\n");
             viewProducts();     
-        }
-    )
-};
-
-function Switch(action) {
-    switch (action) {
-        case "view products for sale":
-            return viewProducts();
-        case "view low inventory":
-            return lowInventory();
-        case "add to inventory":
-            return addInventory();
-        case "add new product":
-            return newProduct();
-        default:
-            return console.log("You're doing it wrong!!!")
-    }
-};
+})};
