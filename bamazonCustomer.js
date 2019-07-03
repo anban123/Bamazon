@@ -14,9 +14,7 @@ connection.connect(function(err) {
     console.log("Connected as Id " + connection.threadId +"\n\n\n\n\n\n");
 });
 
-
 start();
-//console.log("Here are all the available items.\n");
 
 function start() {
     display();
