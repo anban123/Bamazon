@@ -23,7 +23,7 @@ function start() {
         name: "choices",
         type: "list",
         message: "What would you like to do?",
-        choices: ["View products for sale.", "View low inventory.", "Add to inventory.", "Add new product.", "Delete a product."]
+        choices: ["View products for sale.", "View low inventory.", "Add to inventory.", "Add new product.", "Delete a product.", "Delete units of a product."]
     }) .then(function(answer) {
         console.log("answer: ", answer.choices);
 
@@ -39,6 +39,8 @@ function start() {
                 return newProduct();
             case "Delete a product.":
                 return deleteItem();
+            case "Delete units of a product.":
+                return deleteUnits();
             default:
                 return console.log("You're doing it wrong!!!")
         };
@@ -200,9 +202,8 @@ function deleteItem() {
     })
 })};
 
-// Funtion to delete units of an item --------- incomplete
+// Funtion to delete a select amount of units of an item (or all)
 function deleteUnits() {
-    // console.log("Deleting item.\n");
     connection.query("SELECT * FROM items", function(err, res) {
         if (err) throw err;
         var itemArray = [];
@@ -222,44 +223,53 @@ function deleteUnits() {
                 message: "Would you like to delete all units of this product?",
                 choices: ["Yes", "No"]
             }
-        ]).then(function(answer) {
-            if (answer.deleteNumber === Yes) {
+        ]).then(function(answerA) {
+            if (answerA.deleteAllQ === "Yes") {
                 connection.query(
                     "DELETE FROM items WHERE ?",
                     {
-                        product_name: answer.productName
+                        product_name: answerA.productName
                     },
                     function(err, res) {
                         if (err) throw err;
-                        console.log(res.affectedRows + " item deleted!\n");     
-
-                
+                        console.log(`\nAll units of ${answerA.productName} have been deleted!\n`);
+                        connection.end(); 
                 })
             } else {
                 inquirer.prompt({
                     name: "deleteNumber",
                     type: "input",
-                    message: "How many units would you like to delete?"
-                }).then(function(answer) {
-                    
-                    var newAmount = 
-                    connection.query( 
-                        "UPDATE items SET ? WHERE ?",
-                        [
-                            {
-                                stock_quantity: newQuantity,  
-                            },
-                            {
-                                product_name: answer.productName,
-                            }
-                        ],
-                        function(err, res) {
-                            if (err) throw err;
-                            //console.log(res.affectedRows)
-                            console.log(answer.addedQuantity + " units added for " + answer.productName);
+                    message: "How many units would you like to delete?",
+                    validate: function(quantity) {
+                        if (quantity = NaN || quantity < 1) {
+                            console.log("Please input a valid number.");
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+                }).then(function(answerB) {
+
+                    connection.query(`SELECT stock_quantity FROM items WHERE product_name = "${answerA.productName}"`, function(err, res) {
+                        if (err) throw err;
+                        var newAmount = res[0].stock_quantity - answerB.deleteNumber;
+                        
+                        connection.query(`UPDATE items SET ? WHERE ?`,
+                            [
+                                {
+                                    stock_quantity: newAmount,  
+                                },
+                                {
+                                    product_name: answerA.productName,
+                                }
+                            ],
+                            function(err, res) {
+                                if (err) throw err;
+                                //console.log(res.affectedRows)
+                                console.log(`\n\n${answerB.deleteNumber} has been deleted from ${answerA.productName}'s stock.\n\n`);
+                            })
                         })
-                })
+                    })
             }
-        
     })
 })};
