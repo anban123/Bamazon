@@ -15,23 +15,34 @@ connection.connect(function(err) {
 });
 
 var itemArray = [];              
-var action = process.argv.slice(2).join(" ");
-console.log("action: ", action);
+start();
 
-// Switch function to run chosen functions
-switch (action) {
-    case "view products for sale":
-        return viewProducts(action);
-    case "view low inventory":
-        return lowInventory(action);
-    case "add to inventory":
-        return addInventory(action);
-    case "add new product":
-        return newProduct(action);
-    default:
-        return console.log("You're doing it wrong!!!")
-};  
+// Function to ask user what they want to do
+function start() {
+    inquirer.prompt({
+        name: "choices",
+        type: "list",
+        message: "What would you like to do?",
+        choices: ["View products for sale.", "View low inventory.", "Add to inventory.", "Add new product.", "Delete a product."]
+    }) .then(function(answer) {
+        console.log("answer: ", answer.choices);
 
+        // Switch function to run chosen functions
+        switch (answer.choices) {
+            case "View products for sale.":
+                return viewProducts();
+            case "View low inventory.":
+                return lowInventory();
+            case "Add to inventory.":
+                return addInventory();
+            case "Add new product.":
+                return newProduct();
+            case "Delete a product.":
+                return deleteItem();
+            default:
+                return console.log("You're doing it wrong!!!")
+        };
+})};
 
 // Function to view products for sale  (read)
 function viewProducts() {
@@ -39,32 +50,27 @@ function viewProducts() {
     connection.query("SELECT * FROM items", function(err, res) {
         if (err) throw err;
 
-        for (var i = 0; i < itemArray.length; i++) {
-            something.push.res[i].product_name               //change something ------------------------
-        }
-        console.log(res);
+        console.table(res);
         connection.end();
 })};
-
 
 // Function to view low inventory
 function lowInventory() {
     console.log("Viewing items with low inventory, with 5 or less units.\n");
     connection.query("SELECT * FROM items WHERE stock_quantity <= 5", function(err, res) {
         if (err) throw err;
-        console.log(res);
+        console.table(res);
         connection.end();
 })};
-
 
 // Function to add to inventory
 function addInventory() {
     console.log("Adding more inventory.\n");
     connection.query("SELECT * FROM items", function(err, res) {
         if (err) throw err;
-        for (var i = 0; i < itemArray.length; i++) {
-            something.push.res[i].product_name          //change something ------------------
-        }
+        for (var i = 0; i < res.length; i++) {
+            itemArray.push(res[i].product_name);
+        };
     inquirer.prompt([
         {
             name: "productName",
@@ -73,36 +79,45 @@ function addInventory() {
             choices: itemArray
         },
         {
-            name: "stockQuantity",
+            name: "addedQuantity",
             type: "input",
             message: "How many units of inventory would you like to add?",
             validate: function(quantity) {
-                if (quantity === NaN || quantity === decimal) {  //% quantity = 0?????????????
+                if (quantity % 1 != 0) { 
+                    console.log("\nPlease enter a valid number");
                     return false;
-                    console.log("Please enter a valid number");
                 } else {
-                    return false;
-    }}}]) .then(function(answer) {
-    var query = connection.query(
-        "UPDATE items SET ? WHERE ?",
-        [
-            {
-                stock_quantity: answer.stockQuantity,  
-            },
-            {
-                product_name: answer.productName,
-            }
-        ],
-        function(err, res) {
-            if (err) throw err;
-            console.log(res.affectedRows + " inventory added for " + answer);
-            deleteItem();            //needed????????????
-})})})};
+                    return true;
+    }}}]) .then(function(answer, res) {
+            console.log("addedQuantity: ", answer.addedQuantity);
 
+            connection.query(`SELECT stock_quantity FROM items WHERE product_name = "${answer.productName}"`, function(err, res) {
+                if (err) throw err;
+                var newQuantity = parseInt(answer.addedQuantity) + res[0].stock_quantity;
+
+                connection.query( 
+                "UPDATE items SET ? WHERE ?",
+                [
+                    {
+                        stock_quantity: newQuantity,  
+                    },
+                    {
+                        product_name: answer.productName,
+                    }
+                ],
+                function(err, res) {
+                    if (err) throw err;
+                    //console.log(res.affectedRows)
+                    console.log(answer.addedQuantity + " units added for " + answer.productName);
+                })
+                })
+    })
+})
+};
 
 // Function to add a new product
 function newProduct() {
-    console.log("Creating a new product.\n");
+    // console.log("Creating a new product.\n");
     inquirer.prompt([
         {
             name: "productName",
@@ -120,11 +135,11 @@ function newProduct() {
             type: "input",
             message: "What is the product's price?",
             validate: function(price) {
-                if (price === integer) {
+                if (price != NaN) {                              //need to add validation for 2 decimals...
                     return true;
                 } else {
-                    return false;
                     console.log("Please input a valid number.")
+                    return false;
                 };
             }
         },
@@ -133,44 +148,118 @@ function newProduct() {
             type: "input",
             message: "How many units are there of this product?",
             validate: function(quantity) {
-                if (quantity === NaN || quantity === decimal) {  //which one is correct? And do I need 2 validations?
-                    return false;
+                if (quantity % 1 != 0 || quantity === 0) {  
                     console.log("Please input a valid number.");
+                    return false;
                 } else {
                     return true;
                 };
             }
         }
-    ]);                                                            //need .then!!!!!!!!!
-    var query = connection.query(
+    ]).then(function(answer) {                                                        
+        connection.query(
         "INSERT INTO items SET ?",
         {
             product_name: answer.productName,
             department_name: answer.departmentName,
             price: answer.itemPrice,
-            stock_quantity: answer.stockQuality
-})};
-
+            stock_quantity: answer.stockQuantity
+        }
+    )
+    viewProducts();
+})
+};
 
 // Function to delete an item
 function deleteItem() {
-    console.log("Deleting item.\n");
-    var itemArray = [];
-    inquirer.prompt([
-        {
-            name: "productName",
-            type: "list",
-            message: "Which item would you like to delete?",
-            choices: itemArray
-        }
-    ]);
-    connection.query(
-        "DELETE FROM items WHERE ?",
-        {
-            product_name: answer.productName
-        },
-        function(err, res) {
-            if (err) throw err;
-            console.log(res.affectedRows + " item deleted!\n");
-            viewProducts();     
+    // console.log("Deleting item.\n");
+    connection.query("SELECT * FROM items", function(err, res) {
+        if (err) throw err;
+        var itemArray = [];
+        for (var i = 0; i < res.length; i++) {
+            itemArray.push(res[i].product_name);
+        };
+        inquirer.prompt([
+            {
+                name: "productName",
+                type: "list",
+                message: "Which item would you like to delete?",
+                choices: itemArray
+            }
+        ]).then(function(answer) {
+    
+            connection.query(
+                "DELETE FROM items WHERE ?",
+                {
+                    product_name: answer.productName
+                },
+                function(err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + " item deleted!\n");     
+            })  
+    })
+})};
+
+// Funtion to delete units of an item --------- incomplete
+function deleteUnits() {
+    // console.log("Deleting item.\n");
+    connection.query("SELECT * FROM items", function(err, res) {
+        if (err) throw err;
+        var itemArray = [];
+        for (var i = 0; i < res.length; i++) {
+            itemArray.push(res[i].product_name);
+        };
+        inquirer.prompt([
+            {
+                name: "productName",
+                type: "list",
+                message: "Which item would you like to delete?",
+                choices: itemArray
+            },
+            {
+                name: "deleteAllQ",
+                type: "list",
+                message: "Would you like to delete all units of this product?",
+                choices: ["Yes", "No"]
+            }
+        ]).then(function(answer) {
+            if (answer.deleteNumber === Yes) {
+                connection.query(
+                    "DELETE FROM items WHERE ?",
+                    {
+                        product_name: answer.productName
+                    },
+                    function(err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + " item deleted!\n");     
+
+                
+                })
+            } else {
+                inquirer.prompt({
+                    name: "deleteNumber",
+                    type: "input",
+                    message: "How many units would you like to delete?"
+                }).then(function(answer) {
+                    
+                    var newAmount = 
+                    connection.query( 
+                        "UPDATE items SET ? WHERE ?",
+                        [
+                            {
+                                stock_quantity: newQuantity,  
+                            },
+                            {
+                                product_name: answer.productName,
+                            }
+                        ],
+                        function(err, res) {
+                            if (err) throw err;
+                            //console.log(res.affectedRows)
+                            console.log(answer.addedQuantity + " units added for " + answer.productName);
+                        })
+                })
+            }
+        
+    })
 })};
